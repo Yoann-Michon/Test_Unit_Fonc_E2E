@@ -1,11 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { CreateUserDto } from '../user/dto/create-user.dto';
-import { User } from 'src/user/entities/user.entity';
-import { InjectRepository } from '@nestjs/typeorm';
-
 @Injectable()
 export class AuthService {
   constructor(
@@ -15,9 +12,8 @@ export class AuthService {
 
   async validateUser(email: string, pass: string){
     try {
-      const ListOfUsers = await this.usersService.searchUser(email);
-      const user = ListOfUsers.find((u) => u.email === email);
-
+      const user = await this.usersService.findOne(email);
+      
       if (user && (await bcrypt.compare(pass, user.password))) {
         const { password, ...result } = user;
         return result;
@@ -30,43 +26,28 @@ export class AuthService {
 
   async login(user: any) {
     try {
-      const payload = { email: user.email, sub: user.userId, role: user.role };
+      const payload = { email: user.email, sub: user.id, role: user.role, firstname: user.firstname,
+        lastname: user.lastname, };
       return {
-        access_token: this.jwtService.sign(payload),
+        token: this.jwtService.sign(payload),
         message: 'Login successful',
-        user: {
-          id: user.id,
-          email: user.email,
-          pseudo: user.pseudo,
-          role: user.role,
-        },
       };
     } catch (error) {
+      console.error("Error in login:", error);
       throw new Error('Error during login');
     }
   }
 
   async register(createUserDto: CreateUserDto) {
     try {
-      const user = await this.usersService.searchUser(createUserDto.email);
-      if (user.length > 0) {
-        throw new ConflictException('Email already in use');
-      }
-
-      const hashedPassword = await bcrypt.hash(
-        createUserDto.password,
-        Number(process.env.SALT),
-      );
-      await this.usersService.create({
-        ...createUserDto,
-        password: hashedPassword,
-      });
+      await this.usersService.create(createUserDto)
 
       return {
         message: 'User created successfully',
       };
     } catch (error) {
-      throw new Error(`Error during user registration: ${error.message}`);
+      console.error('Error during registration:', error);
+      throw new InternalServerErrorException(`Error during user registration: ${error.message}`);
     }
   }
 }

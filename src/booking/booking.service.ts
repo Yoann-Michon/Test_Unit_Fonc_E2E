@@ -23,7 +23,6 @@ export class BookingService {
     private hotelService: HotelService,
   ) {}
 
-  @Public()
   async create(
     user: User,
     createBookingDto: CreateBookingDto,
@@ -50,7 +49,6 @@ export class BookingService {
     }
   }
 
-  @Roles(UserRole.ADMIN, UserRole.USER)
   async findAll(user: User, isAdmin: boolean = false): Promise<Booking[]> {
     try {
       if (isAdmin) {
@@ -66,7 +64,6 @@ export class BookingService {
     }
   }
 
-  @Roles(UserRole.USER, UserRole.ADMIN)
   async findOne(
     id: string,
     user: User,
@@ -95,37 +92,25 @@ export class BookingService {
       );
     }
   }
-  @Roles(UserRole.USER, UserRole.ADMIN)
-  async update(
-    id: string,
-    updatebookingDto: UpdateBookingDto,
-    user: User,
-    isAdmin: boolean = false,
-  ): Promise<Booking> {
+  async update(user: User, bookingId: string, updateBookingDto: UpdateBookingDto): Promise<Booking> {
     try {
-      const booking = await this.findOne(id, user, isAdmin);
-
+      const booking = await this.bookingRepository.findOne({ where: { id: bookingId }, relations: ['user'] });
+  
       if (!booking) {
-        throw new NotFoundException('Booking not found');
+        throw new NotFoundException(`Booking with ID ${bookingId} not found`);
       }
-
-      if (!isAdmin && booking.user.id !== user.id) {
-        throw new ForbiddenException(
-          'You are not authorized to update this booking',
-        );
+  
+      if (user.role !== UserRole.ADMIN && booking.user.id !== user.id) {
+        throw new ForbiddenException("You don't have permission to update this booking");
       }
-
-      await this.bookingRepository.update(id, updatebookingDto);
-
-      return this.findOne(id, user, isAdmin);
+  
+      return await this.bookingRepository.save({...booking, ...updateBookingDto});
     } catch (error) {
-      throw new InternalServerErrorException(
-        `Error updating booking: ${error.message}`,
-      );
+      throw new InternalServerErrorException(`Failed to update booking: ${error.message}`);
     }
   }
+  
 
-  @Roles(UserRole.USER, UserRole.ADMIN)
   async remove(
     id: string,
     user: User,
@@ -150,4 +135,21 @@ export class BookingService {
       throw new Error(`Error deleting booking`);
     }
   }
+
+  async getUserBooking(userId: string): Promise<Booking[]> {
+    try {
+      const bookings = await this.bookingRepository.find({ where: { user: { id: userId } } });
+  
+      if (!bookings || bookings.length === 0) {
+        throw new NotFoundException(`No bookings found for user with ID ${userId}`);
+      }
+  
+      return bookings;
+    } catch (error) {
+      throw new InternalServerErrorException(`Failed to fetch bookings: ${error.message}`);
+    }
+  }
+  
+  
+  
 }
