@@ -11,6 +11,7 @@ import { UserRole } from './entities/user.enum';
 @Controller('user')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UserController {
+  [x: string]: any;
   constructor(private readonly userService: UserService) {}
 
   @Public()

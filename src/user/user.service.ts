@@ -30,7 +30,7 @@ export class UserService {
         createUserDto.password,
         Number(process.env.SALT),
       );
-      console.log(hashedPassword);
+      // console.log(hashedPassword);
 
       return await this.usersRepository.save({
         ...createUserDto,
@@ -79,10 +79,10 @@ export class UserService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    console.log("wwwwwwwwwwwwwwwwwwwwwwww");
+    // console.log("wwwwwwwwwwwwwwwwwwwwwwww");
     try {
       const user = await this.usersRepository.findOneBy({ id });
-      console.log(user);
+      // console.log(user);
       
       if (!user) {
         throw new NotFoundException('User not found');
