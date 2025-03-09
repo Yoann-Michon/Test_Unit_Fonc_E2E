@@ -3,26 +3,232 @@ import { HotelController } from './hotel.controller';
 import { HotelService } from './hotel.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Hotel } from './entities/hotel.entity';
+import { CreateHotelDto } from './dto/create-hotel.dto';
+import { UpdateHotelDto } from './dto/update-hotel.dto';
+import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guard/roles.guard';
+import { UserRole } from 'src/user/entities/user.enum';
+import { ExecutionContext, HttpStatus, ForbiddenException } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 
 describe('HotelController', () => {
   let controller: HotelController;
+  let service: HotelService;
+
+  const mockHotelService = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    searchHotel: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+
+  const mockJwtAuthGuard = {
+    canActivate: jest.fn((context: ExecutionContext) => {
+      const request = context.switchToHttp().getRequest();
+      request.user = { role: UserRole.ADMIN }; // Simule un utilisateur ADMIN par défaut
+      return true;
+    }),
+  };
+
+  const mockRolesGuard = {
+    canActivate: jest.fn((context: ExecutionContext) => {
+      const request = context.switchToHttp().getRequest();
+      return request.user && request.user.role === UserRole.ADMIN;
+    }),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [HotelController],
       providers: [
-        HotelService,
+        {
+          provide: HotelService,
+          useValue: mockHotelService,
+        },
         {
           provide: getRepositoryToken(Hotel),
-          useValue: {}, // Tu peux ici fournir un faux repository ou un mock adapté
+          useValue: {},
         },
       ],
-    }).compile();
+    })
+    .overrideGuard(JwtAuthGuard)
+    .useValue(mockJwtAuthGuard)
+    .overrideGuard(RolesGuard)
+    .useValue(mockRolesGuard)
+    .compile();
 
     controller = module.get<HotelController>(HotelController);
+    service = module.get<HotelService>(HotelService);
   });
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  describe('create', () => {
+    it('should create a new hotel (ADMIN)', async () => {
+      const createHotelDto: CreateHotelDto = {
+        name: 'Test Hotel',
+        location: 'Test Location',
+        description: 'Test Description',
+        picture_list: ['test.jpg']
+      };
+      const createdHotel = { ...createHotelDto, id: '1' };
+
+      mockHotelService.create.mockResolvedValue(createdHotel);
+
+      const result = await controller.create(createHotelDto);
+
+      expect(result).toEqual({
+        statusCode: HttpStatus.CREATED,
+        message: 'Hotel successfully created',
+        data: createdHotel,
+      });
+      expect(mockHotelService.create).toHaveBeenCalledWith(createHotelDto);
+    });
+    it('should deny access if not an admin', async () => {
+      mockRolesGuard.canActivate.mockReturnValue(false); // Simule un échec de garde pour rôle non ADMIN
+
+      const createHotelDto: CreateHotelDto = {
+        name: 'Test Hotel',
+        location: 'Test Location',
+        description: 'Test Description',
+        picture_list: ['test.jpg']
+      };
+
+      try {
+        await controller.create(createHotelDto);
+      } catch (e) {
+        expect(e).toBeInstanceOf(ForbiddenException);
+      }
+    });
+    it('should deny access if not authenticated', async () => {
+      mockJwtAuthGuard.canActivate.mockReturnValue(false); // Simule un échec de garde pour authentification
+    
+      const createHotelDto: CreateHotelDto = { name: 'Test Hotel', location: 'Test Location', description: 'Test Description', picture_list: ['test.jpg'] };
+    
+      try {
+        await controller.create(createHotelDto);
+      } catch (e) {
+        expect(e).toBeInstanceOf(ForbiddenException);
+      }
+    });
+  });
+
+  describe('findAll', () => {
+    it('should return an array of hotels', async () => {
+      const hotels = [{ id: '1', name: 'Test Hotel', location: 'Test Location' }];
+      mockHotelService.findAll.mockResolvedValue(hotels);
+
+      const result = await controller.findAll(10, 'name', 'ASC');
+
+      expect(result).toEqual({
+        statusCode: HttpStatus.OK,
+        message: 'Hotels retrieved successfully',
+        data: hotels,
+      });
+      expect(mockHotelService.findAll).toHaveBeenCalledWith(10, 'name', 'ASC');
+    });
+  });
+
+  describe('search', () => {
+    it('should return an array of hotels', async () => {
+      const hotels = [{ id: '1', name: 'Test Hotel', location: 'Test Location', description: 'Test Description', picture_list: ['test.jpg'] }];
+      mockHotelService.findAll.mockResolvedValue(hotels);
+    
+      const result = await controller.findAll(10, 'name', 'ASC');
+    
+      expect(result).toEqual({
+        statusCode: HttpStatus.OK,
+        message: 'Hotels retrieved successfully',
+        data: hotels,
+      });
+      expect(mockHotelService.findAll).toHaveBeenCalledWith(10, 'name', 'ASC');
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return a single hotel', async () => {
+      const id = '1';
+      const hotel = { id, name: 'Test Hotel', location: 'Test Location' };
+      mockHotelService.findOne.mockResolvedValue(hotel);
+
+      const result = await controller.findOne(id);
+
+      expect(result).toEqual({
+        statusCode: HttpStatus.OK,
+        message: 'Hotel retrieved successfully',
+        data: hotel,
+      });
+      expect(mockHotelService.findOne).toHaveBeenCalledWith(id);
+    });
+  });
+  describe('update', () => {
+    it('should update a hotel (ADMIN)', async () => {
+      const id = '1';
+      const updateHotelDto: UpdateHotelDto = {
+        name: 'Updated Hotel',
+        location: 'Updated Location',
+        description: 'Updated Description',
+        picture_list: ['updated.jpg']
+      };
+      const updatedHotel = { id, ...updateHotelDto };
+
+      mockHotelService.update.mockResolvedValue(updatedHotel);
+
+      const result = await controller.update(id, updateHotelDto);
+
+      expect(result).toEqual({
+        statusCode: HttpStatus.OK,
+        message: 'Hotel updated successfully',
+        data: updatedHotel,
+      });
+      expect(mockHotelService.update).toHaveBeenCalledWith(id, updateHotelDto);
+    });
+    it('should deny access if not an admin', async () => {
+      mockRolesGuard.canActivate.mockReturnValue(false); // Simule un échec de garde pour rôle non ADMIN
+
+      const id = '1';
+      const updateHotelDto: UpdateHotelDto = {
+        name: 'Updated Hotel',
+        location: 'Updated Location',
+        description: 'Updated Description',
+        picture_list: ['updated.jpg']
+      };
+
+      try {
+        await controller.update(id, updateHotelDto);
+      } catch (e) {
+        expect(e).toBeInstanceOf(ForbiddenException);
+      }
+    });
+  });
+
+  describe('remove', () => {
+    it('should remove a hotel (ADMIN)', async () => {
+      const id = '1';
+      mockHotelService.remove.mockResolvedValue(`Hotel with id ${id} deleted`);
+
+      const result = await controller.remove(id);
+
+      expect(result).toEqual({
+        statusCode: HttpStatus.OK,
+        message: 'Hotel deleted successfully',
+      });
+      expect(mockHotelService.remove).toHaveBeenCalledWith(id);
+    });
+    it('should deny access if not an admin', async () => {
+      mockRolesGuard.canActivate.mockReturnValue(false); // Simule un échec de garde pour rôle non ADMIN
+
+      const id = '1';
+
+      try {
+        await controller.remove(id);
+      } catch (e) {
+        expect(e).toBeInstanceOf(ForbiddenException);
+      }
+    });
   });
 });
