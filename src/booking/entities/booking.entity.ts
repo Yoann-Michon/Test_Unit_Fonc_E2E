@@ -16,9 +16,9 @@ export class Booking {
     @CreateDateColumn()
     createdAt: Date;
     
-    @ManyToOne(() => User, (user) => user.bookings)
+    @ManyToOne(() => User, (user) => user.bookings,{ onDelete: 'SET NULL' })
     user: User;
   
-    @ManyToOne(() => Hotel, (hotel) => hotel.bookings)
+    @ManyToOne(() => Hotel, (hotel) => hotel.bookings,{ onDelete: 'SET NULL' })
     hotel: Hotel;
   }

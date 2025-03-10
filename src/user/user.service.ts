@@ -57,8 +57,7 @@ export class UserService {
           { email: ILike(`%${query}%`) },
           { lastname: ILike(`%${query}%`) },
           { firstname: ILike(`%${query}%`) },
-        ],
-        take: 10,
+        ]
       });
     } catch (error) {
       throw new InternalServerErrorException('Error searching for users');

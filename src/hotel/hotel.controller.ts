@@ -91,7 +91,7 @@ export class HotelController {
     @Param('id') id: string,
     @Body() updateHotelDto: UpdateHotelDto,
     @UploadedFiles() files: Express.Multer.File[]
-  ) {
+  ) {    
     const updatedHotel = await this.hotelService.update(id, updateHotelDto, files); 
     return {
       statusCode: HttpStatus.OK,

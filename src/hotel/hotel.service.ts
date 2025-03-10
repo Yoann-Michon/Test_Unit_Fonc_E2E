@@ -19,10 +19,14 @@ export class HotelService {
     private readonly imgBBService: UploadImgService,
   ) {}
 
-  async create(createHotelDto: CreateHotelDto, files: Express.Multer.File[]): Promise<Hotel> {
+  async create(
+    createHotelDto: CreateHotelDto,
+    files: Express.Multer.File[],
+  ): Promise<Hotel> {
     try {
-
-      const existingHotel = await this.hotelRepository.findOneBy({ name: createHotelDto.name });
+      const existingHotel = await this.hotelRepository.findOneBy({
+        name: createHotelDto.name,
+      });
       if (existingHotel) {
         throw new BadRequestException('Hotel with this name already exists');
       }
@@ -30,7 +34,6 @@ export class HotelService {
       if (!files || files.length === 0) {
         throw new BadRequestException('At least one image is required');
       }
-
 
       const imageUrls = await this.imgBBService.uploadImages(files);
 
@@ -45,9 +48,10 @@ export class HotelService {
 
       return savedHotel;
     } catch (error) {
-      console.error('🔥 Erreur lors de la création de l’hôtel:', error);
       if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException(`Error creating hotel: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Error creating hotel: ${error.message}`,
+      );
     }
   }
 
@@ -62,7 +66,6 @@ export class HotelService {
         take: limit,
       });
     } catch (error) {
-      console.error('🔥 Erreur lors de la récupération des hôtels:', error);
       throw new InternalServerErrorException('Error retrieving hotels');
     }
   }
@@ -70,11 +73,12 @@ export class HotelService {
   async searchHotel(query: string): Promise<Hotel[]> {
     try {
       return await this.hotelRepository.find({
-        where: [{ name: ILike(`%${query}%`) }],
-        take: 10,
+        where: [
+          { name: ILike(`%${query}%`) },
+          { location: ILike(`%${query}%`) },
+        ],
       });
     } catch (error) {
-      console.error('🔥 Erreur lors de la recherche:', error);
       throw new InternalServerErrorException('Error searching for hotels');
     }
   }
@@ -87,36 +91,30 @@ export class HotelService {
       }
       return hotel;
     } catch (error) {
-      console.error('🔥 Erreur lors de la recherche de l’hôtel:', error);
-      throw new InternalServerErrorException(`Error finding hotel: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Error finding hotel: ${error.message}`,
+      );
     }
   }
 
   async update(id: string, updateHotelDto: UpdateHotelDto, files?: Express.Multer.File[]): Promise<Hotel> {
     try {
       const hotel = await this.hotelRepository.findOneBy({ id });
-
+      
       if (!hotel) {
         throw new NotFoundException(`Hotel with ID ${id} not found`);
       }
-
+      
       if (files && files.length > 0) {
-        
         const existingImages = hotel.picture_list || [];
         const newImageUrls = await this.imgBBService.uploadImages(files);
-
         updateHotelDto.picture_list = [...existingImages, ...newImageUrls];
-
       }
-
-      const updatedHotel = await this.hotelRepository.save({
-        ...hotel,
-        ...updateHotelDto,
-      });
-
-      return updatedHotel;
+      
+      const updatedHotel = { ...hotel, ...updateHotelDto };
+      
+      return await this.hotelRepository.save(updatedHotel);
     } catch (error) {
-      console.error('🔥 Erreur lors de la mise à jour:', error);
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(`Error updating hotel: ${error.message}`);
     }
@@ -133,7 +131,9 @@ export class HotelService {
       await this.hotelRepository.delete({ id });
       return `Hotel with id ${id} deleted`;
     } catch (error) {
-      throw new InternalServerErrorException(`Error deleting hotel: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Error deleting hotel: ${error.message}`,
+      );
     }
   }
 }

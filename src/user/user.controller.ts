@@ -117,7 +117,7 @@ export class UserController {
 
   @Roles(UserRole.ADMIN)
   @Delete(':id')
-  async remove(@Param('email') id: string) {
+  async remove(@Param('id') id: string) {
     await this.userService.remove(id);
     return {
       statusCode: HttpStatus.OK,

@@ -9,6 +9,9 @@ export class Hotel {
   @Column()
   name: string;
 
+  @Column("text")
+  street: string;
+
   @Column()
   location: string;
 

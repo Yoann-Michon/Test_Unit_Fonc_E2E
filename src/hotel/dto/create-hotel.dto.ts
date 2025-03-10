@@ -1,4 +1,4 @@
-import { ArrayMinSize, IsArray, IsString, Min, MinLength, IsOptional, IsNumber, IsPositive, MaxLength } from 'class-validator';
+import { ArrayMinSize, IsArray, IsString, Min, MinLength, IsOptional, IsNumber, IsPositive, MaxLength, IsNotEmpty } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateHotelDto {
@@ -9,7 +9,12 @@ export class CreateHotelDto {
 
   @IsString()
   @MinLength(3)
-  @MaxLength(200)
+  street: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(3)
+  @MaxLength(100)
   location: string;
 
   @IsString()
