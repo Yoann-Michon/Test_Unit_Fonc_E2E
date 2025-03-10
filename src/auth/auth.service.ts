@@ -33,7 +33,7 @@ export class AuthService {
         message: 'Login successful',
       };
     } catch (error) {
-      console.error("Error in login:", error);
+      // console.error("Error in login:", error);
       throw new Error('Error during login');
     }
   }
@@ -46,7 +46,7 @@ export class AuthService {
         message: 'User created successfully',
       };
     } catch (error) {
-      console.error('Error during registration:', error);
+      // console.error('Error during registration:', error);
       throw new InternalServerErrorException(`Error during user registration: ${error.message}`);
     }
   }
