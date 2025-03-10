@@ -26,10 +26,13 @@ export class BookingService {
   ) {}
 
   async create(
-    createBookingDto: CreateBookingDto, userId: string
+    createBookingDto: Partial<CreateBookingDto>, userId: string
   ): Promise<Booking> {
     try {
       
+      if (!createBookingDto.hotelId) {
+        throw new NotFoundException('Hotel ID is required');
+      }
       const hotel = await this.hotelService.findOne(createBookingDto.hotelId);
       const user = await this.userService.findOneById(userId);
       

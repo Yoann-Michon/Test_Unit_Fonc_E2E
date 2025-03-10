@@ -9,7 +9,6 @@ import {
   UseGuards,
   Request,
   HttpStatus,
-  Logger,
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -18,20 +17,15 @@ import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { UserRole } from '../user/entities/user.enum';
 import { Roles } from '../auth/guard/roles.decorator';
 import { RolesGuard } from '../auth/guard/roles.guard';
-import { Public } from 'src/auth/guard/public.decorator';
 
 @Controller('booking')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
-  private readonly logger = new Logger('BookingController');
 
-  @Public()
+  @Roles(UserRole.ADMIN,UserRole.USER)
   @Post()
-  async create(@Body() createBookingDto: CreateBookingDto, @Request() req) {
-    this.logger.log(createBookingDto);
-    this.logger.log(req);
-    this.logger.log(req.user);
+  async create(@Body() createBookingDto: Partial<CreateBookingDto>, @Request() req) {
     
     const booking = await this.bookingService.create(
       createBookingDto,req.user.id
