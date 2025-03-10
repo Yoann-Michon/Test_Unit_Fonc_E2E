@@ -10,6 +10,7 @@ import {
   Request,
   Query,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -77,6 +78,9 @@ async update(
   @Param('id') bookingId: string,
   @Body() updateBookingDto: UpdateBookingDto
 ) {
+  if (req.user.role !== UserRole.ADMIN && updateBookingDto.userId !== req.user.id) {
+    throw new ForbiddenException('You can only update your own bookings');
+  }
   const updatedBooking = await this.bookingService.update(req.user, bookingId, updateBookingDto);
   return {
     statusCode: HttpStatus.OK,
