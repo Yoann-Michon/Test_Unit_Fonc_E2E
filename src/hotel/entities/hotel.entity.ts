@@ -9,13 +9,16 @@ export class Hotel {
   @Column()
   name: string;
 
+  @Column("text")
+  street: string;
+
   @Column()
   location: string;
 
   @Column('text')
   description: string;
 
-  @Column('simple-json')
+  @Column('simple-array')
   picture_list: string[];
 
   @Column("decimal")

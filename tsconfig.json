@@ -16,6 +16,14 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@app/upload-img": [
+        "libs/upload-img/src"
+      ],
+      "@app/upload-img/*": [
+        "libs/upload-img/src/*"
+      ]
+    }
   }
 }

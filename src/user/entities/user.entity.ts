@@ -18,6 +18,9 @@ export class User {
   email: string;
 
   @Column()
+  pseudo: string;
+
+  @Column()
   @Exclude()
   password: string;
 

@@ -47,7 +47,7 @@ export class UserController {
     };
   }
 
-  @Public()
+  @Roles(UserRole.ADMIN,UserRole.USER)
   @Get(':email')
   async findOne(@Param('email') email: string, @Request() req) {
     if (req.user.email !== email && req.user.role !== UserRole.EMPLOYEE && req.user.role !== UserRole.ADMIN) {
@@ -63,6 +63,22 @@ export class UserController {
       data: user,
     };
   }
+  @Roles(UserRole.ADMIN,UserRole.USER)
+  @Get(':id')
+  async findOneById(@Param('id') id: string, @Request() req) {
+    if (req.user.id !== id && req.user.role !== UserRole.EMPLOYEE && req.user.role !== UserRole.ADMIN) {
+      throw new NotFoundException(`You cannot view this user`);
+    }
+    const user = await this.userService.findOneById(id);
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'User retrieved successfully',
+      data: user,
+    };
+  }
 
   @Roles(UserRole.ADMIN, UserRole.USER)
   @Patch(':id')
@@ -71,9 +87,6 @@ export class UserController {
     @Body() updateUserDto: UpdateUserDto,
     @Request() req
   ) {
-    console.log(`Updating user with ID: ${id}`);
-    console.log('Update data:', updateUserDto);
-    console.log('Current user:', req.user);
 
     if (req.user.role !== UserRole.ADMIN && req.user.id !== id) {
       throw new ForbiddenException('You can only update your own information.');
@@ -86,7 +99,6 @@ export class UserController {
     if (updateUserDto.role && req.user.role !== UserRole.ADMIN && req.user.id === id) {
       throw new ForbiddenException('You cannot change your own role.');
     }
-
     try {
       const updatedUser = await this.userService.update(id, updateUserDto);
 
@@ -106,7 +118,7 @@ export class UserController {
 
   @Roles(UserRole.ADMIN)
   @Delete(':id')
-  async remove(@Param('email') id: string) {
+  async remove(@Param('id') id: string) {
     await this.userService.remove(id);
     return {
       statusCode: HttpStatus.OK,

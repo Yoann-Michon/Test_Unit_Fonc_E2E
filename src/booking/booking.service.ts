@@ -15,20 +15,30 @@ import { UserRole } from '../user/entities/user.enum';
 import { Public } from '../auth/guard/public.decorator';
 import { InjectRepository } from '@nestjs/typeorm';
 import { HotelService } from 'src/hotel/hotel.service';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class BookingService {
   constructor(
     @InjectRepository(Booking) private bookingRepository: Repository<Booking>,
     private hotelService: HotelService,
+    private userService: UserService
   ) {}
 
   async create(
-    user: User,
-    createBookingDto: CreateBookingDto,
+    createBookingDto: Partial<CreateBookingDto>, userId: string
   ): Promise<Booking> {
     try {
+      
+      if (!createBookingDto.hotelId) {
+        throw new NotFoundException('Hotel ID is required');
+      }
       const hotel = await this.hotelService.findOne(createBookingDto.hotelId);
+      const user = await this.userService.findOneById(userId);
+      
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
 
       if (!hotel) {
         throw new NotFoundException('Hotel not found');

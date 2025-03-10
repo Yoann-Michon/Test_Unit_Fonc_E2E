@@ -8,7 +8,6 @@ import {
   Delete,
   UseGuards,
   Request,
-  Query,
   HttpStatus,
   ForbiddenException,
 } from '@nestjs/common';
@@ -19,20 +18,20 @@ import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { UserRole } from '../user/entities/user.enum';
 import { Roles } from '../auth/guard/roles.decorator';
 import { RolesGuard } from '../auth/guard/roles.guard';
-import { Public } from 'src/auth/guard/public.decorator';
 
 @Controller('booking')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
-  @Public()
+  @Roles(UserRole.ADMIN,UserRole.USER)
   @Post()
-  async create(@Body() createBookingDto: CreateBookingDto, @Request() req) {
+  async create(@Body() createBookingDto: Partial<CreateBookingDto>, @Request() req) {
+    
     const booking = await this.bookingService.create(
-      req.user,
-      createBookingDto,
+      createBookingDto,req.user.id
     );
+    
     return {
       statusCode: HttpStatus.CREATED,
       message: 'Booking created successfully',
