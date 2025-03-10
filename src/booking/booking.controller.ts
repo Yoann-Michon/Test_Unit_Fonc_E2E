@@ -96,7 +96,7 @@ async update(
     const result = await this.bookingService.remove(
       id,
       req.user,
-      req.user.role === 'admin',
+      req.user.role === UserRole.ADMIN,
     );
     return {
       statusCode: HttpStatus.OK,

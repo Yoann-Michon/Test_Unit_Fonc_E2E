@@ -73,11 +73,11 @@ describe('UserService', () => {
       await expect(service.create({ email: 'test@example.com', password: 'password123' } as CreateUserDto))
         .rejects.toThrow(InternalServerErrorException);
     });
+    // it('should throw InternalServerErrorException if email is invalid', async () => {
+    //   await expect(service.create({ email: 'invalidemail', password: 'password123' } as CreateUserDto))
+    //     .rejects.toThrow(InternalServerErrorException);
+    // });
   });
-  // it('should throw InternalServerErrorException if email is invalid', async () => {
-  //   await expect(service.create({ email: 'invalidemail', password: 'password123' } as CreateUserDto))
-  //     .rejects.toThrow(InternalServerErrorException);
-  // });
   //////////findOne//////////
   describe('findOne', () => {
     it('should return a user', async () => {

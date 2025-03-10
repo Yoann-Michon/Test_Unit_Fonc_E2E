@@ -10,7 +10,8 @@ import { User } from 'src/user/entities/user.entity';
 import { Hotel } from 'src/hotel/entities/hotel.entity';
 import { ExecutionContext, HttpStatus, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { UpdateBookingDto } from './dto/update-booking.dto';
+import { UpdateBookingDto } from './dto/update-booking.dto'
+
 
 describe('BookingController', () => {
   let controller: BookingController;
@@ -28,15 +29,16 @@ describe('BookingController', () => {
   const mockJwtAuthGuard = {
     canActivate: jest.fn((context: ExecutionContext) => {
       const request = context.switchToHttp().getRequest();
-      request.user = { id: 'userId', role: UserRole.USER }; // Simule un utilisateur connecté par défaut
-      return true;
+      // Simule un utilisateur connecté par défaut
+      request.user = { id: 'userId', role: UserRole.USER };
+      return true; // Autorise l'accès par défaut
     }),
   };
-
+  
   const mockRolesGuard = {
     canActivate: jest.fn((context: ExecutionContext) => {
       const request = context.switchToHttp().getRequest();
-      return request.user && request.user.role === UserRole.ADMIN;
+      return request.user && request.user.role === UserRole.ADMIN; // Autorise uniquement les admins
     }),
   };
 
@@ -63,12 +65,10 @@ describe('BookingController', () => {
     controller = module.get<BookingController>(BookingController);
     service = module.get<BookingService>(BookingService);
   });
-
   it('should be defined', () => {
     expect(controller).toBeDefined();
     expect(service).toBeDefined();
   });
-
   describe('create', () => {
     it('should create a booking', async () => {
       const createBookingDto: CreateBookingDto = {
@@ -92,19 +92,29 @@ describe('BookingController', () => {
       });
       expect(mockBookingService.create).toHaveBeenCalledWith({ id: 'userId', role: UserRole.USER }, createBookingDto);
     });
-    // it('should return Forbidden for non-authenticated user', async () => {
-    //   const createBookingDto: CreateBookingDto = {
-    //     hotelId: 'hotelId',
-    //     userId: 'userId',
-    //     checkInDate: new Date(),
-    //     checkOutDate: new Date(),
-    //   };
-    //   const user = { id: 'userId', role: UserRole.USER };
-  
-    //   mockJwtAuthGuard.canActivate.mockReturnValueOnce(false);
-  
-    //   await expect(controller.create(createBookingDto, { user: user })).rejects.toThrow(InternalServerErrorException);
-    // });
+    it('should create a booking', async () => {
+      const createBookingDto: CreateBookingDto = {
+        hotelId: '',
+        userId: 'userId',
+        checkInDate: new Date(),
+        checkOutDate: new Date(),
+      };
+      const user: User = { id: 'userId', role: UserRole.USER } as User;
+      const hotel = { id: 'hotelId', name: 'Test Hotel', location: 'Test Location' } as Hotel;
+      const booking = { id : '1', ...createBookingDto, createdAt : new Date(), user : user, hotel : hotel} as Booking;
+
+      mockBookingService.create.mockResolvedValue(booking);
+
+      const result = await controller.create(createBookingDto, { user: user });
+
+      expect(result).toEqual({
+        statusCode: HttpStatus.CREATED,
+        message: 'Booking created successfully',
+        data: booking,
+      });
+      expect(mockBookingService.create).toHaveBeenCalledWith({ id: 'userId', role: UserRole.USER }, createBookingDto);
+    });
+
   });
   describe('findAll', () => {
     it('should return an array of bookings', async () => {
@@ -128,37 +138,6 @@ describe('BookingController', () => {
       });
       expect(mockBookingService.findAll).toHaveBeenCalledWith({ id: 'adminId', role: UserRole.ADMIN }, true);
     });
-
-    // it('should return Forbidden for non-admin users', async () => {
-    //   const user1: User = { id: 'userId1', role: UserRole.USER } as User;
-    //   const user2: User = { id: 'userId2', role: UserRole.USER } as User;
-    //   const hotel1 = { id: 'hotelId1', name: 'Hotel 1', location: 'Test Location 1' } as Hotel;
-    //   const hotel2 = { id: 'hotelId2', name: 'Hotel 2', location: 'Test Location 2' } as Hotel;
-    //   const bookings = [
-    //     { id: '1', hotel: hotel1, user: user1, checkInDate: new Date(), checkOutDate: new Date(), createdAt : new Date() },
-    //     { id: '2', hotel: hotel2, user: user2, checkInDate: new Date(), checkOutDate: new Date(), createdAt : new Date() }
-    //   ] as Booking[];
-
-    //   mockBookingService.findAll.mockResolvedValue(bookings);
-
-    //   const result = await controller.findAll({ user: { id: 'userID', role: UserRole.USER } });
-
-    //   expect(result).toEqual({
-    //     statusCode: HttpStatus.FORBIDDEN,
-    //     message: '',
-    //   });
-    //   expect(mockBookingService.findAll).not.toHaveBeenCalledWith();
-    // });
-
-    // it('should return Forbidden for non-admin users', async () => {
-    //   const user = { id: 'userId', role: UserRole.USER };
-  
-    //   // Configure le mockRolesGuard pour renvoyer false pour ce test
-    //   mockRolesGuard.canActivate.mockReturnValueOnce(false);
-  
-    //   await expect(controller.findAll({ user })).rejects.toThrow(ForbiddenException);
-    // });
-  
     it('should return Forbidden for unauthenticated users trying to access all bookings', async () => {
       // Configure le mockJwtAuthGuard pour renvoyer false
       mockJwtAuthGuard.canActivate.mockReturnValueOnce(false);
@@ -167,7 +146,6 @@ describe('BookingController', () => {
     });
     
   });
-
   describe('findOne', () => {
     it('should return a single booking', async () => {
       const bookingId = '1';
@@ -193,7 +171,6 @@ describe('BookingController', () => {
       await expect(controller.findOne('1', {})).rejects.toThrow(TypeError);
     });
   });
-
   describe('update', () => {
     it('should update a booking', async () => {
       const updateBookingDto: UpdateBookingDto = {
@@ -246,10 +223,9 @@ describe('BookingController', () => {
       await expect(controller.update({ user: user2 }, '1', updateBookingDto)).rejects.toThrow(ForbiddenException);
     });
   });
-
-
   describe('remove', () => {
-    it('should remove a booking', async () => {
+    
+    it('should remove a booking for admin user', async () => {
       const bookingId = '1';
       mockBookingService.remove.mockResolvedValue('Booking deleted successfully');
 
@@ -261,15 +237,20 @@ describe('BookingController', () => {
       });
       expect(mockBookingService.remove).toHaveBeenCalledWith(bookingId, { id: 'adminId', role: UserRole.ADMIN }, true);
     });
-    // it('should return Forbidden for non-admin users', async () => {
-    //   const user = { id: 'userId', role: UserRole.USER };
-  
-    //   mockRolesGuard.canActivate.mockReturnValueOnce(false);
-  
-    //   await expect(controller.remove('1', { user: user })).rejects.toThrow(ForbiddenException);
-    // });
+    it('should return Forbidden for non-admin users trying to delete a booking', async () => {
+      // Crée un utilisateur non-admin
+      const user = { id: 'userId', role: UserRole.USER };
+      // Moque le service pour qu'il vérifie le rôle
+      mockBookingService.remove.mockImplementationOnce((id, user, isAdmin) => {
+        if (!isAdmin) {
+          throw new ForbiddenException('Access denied');
+        }
+        return 'Booking deleted successfully';
+      });
+      // Teste que l'exception est bien levée
+      await expect(controller.remove('1', { user: user })).rejects.toThrow(ForbiddenException);
+    });
   });
-
   describe('getUserBooking', () => {
     it('should return an array of user bookings', async () => {
       const userId = 'userId1';
@@ -293,27 +274,26 @@ describe('BookingController', () => {
       });
       expect(mockBookingService.getUserBooking).toHaveBeenCalledWith(userId);
     });
+    it('should return an You can only view your own bookings', async () => {
+      const userId = 'userId1';
+      const user1: User = { id: 'userId1', role: UserRole.USER } as User;
+      const user2: User = { id: 'userId2', role: UserRole.USER } as User;
+      const hotel1 = { id: 'hotelId1', name: 'Hotel 1', location: 'Test Location 1' } as Hotel;
+      const hotel2 = { id: 'hotelId2', name: 'Hotel 2', location: 'Test Location 2' } as Hotel;
+      const bookings = [
+        { id: '1', hotel: hotel1, user: user1, checkInDate: new Date(), checkOutDate: new Date(), createdAt : new Date() },
+        { id: '2', hotel: hotel2, user: user2, checkInDate: new Date(), checkOutDate: new Date(), createdAt : new Date() }
+      ] as Booking[];
 
-  it('should return an You can only view your own bookings', async () => {
-    const userId = 'userId1';
-    const user1: User = { id: 'userId1', role: UserRole.USER } as User;
-    const user2: User = { id: 'userId2', role: UserRole.USER } as User;
-    const hotel1 = { id: 'hotelId1', name: 'Hotel 1', location: 'Test Location 1' } as Hotel;
-    const hotel2 = { id: 'hotelId2', name: 'Hotel 2', location: 'Test Location 2' } as Hotel;
-    const bookings = [
-      { id: '1', hotel: hotel1, user: user1, checkInDate: new Date(), checkOutDate: new Date(), createdAt : new Date() },
-      { id: '2', hotel: hotel2, user: user2, checkInDate: new Date(), checkOutDate: new Date(), createdAt : new Date() }
-    ] as Booking[];
+      mockBookingService.getUserBooking.mockResolvedValue(bookings);
 
-    mockBookingService.getUserBooking.mockResolvedValue(bookings);
+      const result = await controller.getUserBooking(userId, { user: { id: 'userId2', role: UserRole.USER } });
 
-    const result = await controller.getUserBooking(userId, { user: { id: 'userId2', role: UserRole.USER } });
-
-    expect(result).toEqual({
-      statusCode: HttpStatus.FORBIDDEN,
-      message: 'You can only view your own bookings',
+      expect(result).toEqual({
+        statusCode: HttpStatus.FORBIDDEN,
+        message: 'You can only view your own bookings',
+      });
+      expect(mockBookingService.getUserBooking).not.toHaveBeenCalledWith();
     });
-    expect(mockBookingService.getUserBooking).not.toHaveBeenCalledWith();
-  });
-  });
+  }); 
 });
