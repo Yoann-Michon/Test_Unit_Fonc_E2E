@@ -11,6 +11,8 @@ async function bootstrap() {
     allowedHeaders: ['Origin', 'X-Requested-With', 'Content', 'Accept', 'Content-Type', 'Authorization'],
     credentials: true,
   });
+  app.useLogger(['log', 'error', 'warn', 'debug', 'verbose']);
+
   await app.listen(4000);
 }
 bootstrap();

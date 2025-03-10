@@ -30,7 +30,6 @@ export class UserService {
         createUserDto.password,
         Number(process.env.SALT),
       );
-      console.log(hashedPassword);
 
       return await this.usersRepository.save({
         ...createUserDto,
@@ -77,18 +76,27 @@ export class UserService {
       );
     }
   }
+  
+  async findOneById(id: string): Promise<User | null> {
+    try {
+      const user = await this.usersRepository.findOne({ where: { id } });
+
+      return user || null;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error finding user: ${error.message}`,
+      );
+    }
+  }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    console.log("wwwwwwwwwwwwwwwwwwwwwwww");
     try {
       const user = await this.usersRepository.findOneBy({ id });
-      console.log(user);
       
       if (!user) {
         throw new NotFoundException('User not found');
       }
       const updatedUser = { ...user, ...updateUserDto };
-      console.log(await this.usersRepository.save(updatedUser));
       
       return await this.usersRepository.save(updatedUser);
     } catch (error) {

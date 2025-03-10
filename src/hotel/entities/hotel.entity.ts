@@ -15,7 +15,7 @@ export class Hotel {
   @Column('text')
   description: string;
 
-  @Column('simple-json')
+  @Column('simple-array')
   picture_list: string[];
 
   @Column("decimal")

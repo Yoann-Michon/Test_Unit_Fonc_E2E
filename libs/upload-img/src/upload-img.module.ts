@@ -4,7 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(), // Pour charger les variables d'environnement
+    ConfigModule.forRoot(),
   ],
   providers: [UploadImgService],
   exports: [UploadImgService],

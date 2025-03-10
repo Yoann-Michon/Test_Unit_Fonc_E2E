@@ -8,8 +8,8 @@ import {
   Delete,
   UseGuards,
   Request,
-  Query,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -24,14 +24,19 @@ import { Public } from 'src/auth/guard/public.decorator';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
+  private readonly logger = new Logger('BookingController');
 
   @Public()
   @Post()
   async create(@Body() createBookingDto: CreateBookingDto, @Request() req) {
+    this.logger.log(createBookingDto);
+    this.logger.log(req);
+    this.logger.log(req.user);
+    
     const booking = await this.bookingService.create(
-      req.user,
-      createBookingDto,
+      createBookingDto,req.user.id
     );
+    
     return {
       statusCode: HttpStatus.CREATED,
       message: 'Booking created successfully',

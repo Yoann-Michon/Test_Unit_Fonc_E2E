@@ -10,19 +10,22 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async validateUser(email: string, pass: string){
+  async validateUser(email: string, pass: string) {
     try {
       const user = await this.usersService.findOne(email);
-      
+  
       if (user && (await bcrypt.compare(pass, user.password))) {
         const { password, ...result } = user;
         return result;
       }
+  
       return null;
     } catch (error) {
-      throw new Error('Error during user validation');
+      console.error('Error during user validation:', error.message);
+      throw error;
     }
   }
+  
 
   async login(user: any) {
     try {
