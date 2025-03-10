@@ -8,6 +8,10 @@ import { BookingModule } from './booking/booking.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { UploadImgModule } from 'libs/upload-img/src';
+import { User } from './user/entities/user.entity';
+import { Hotel } from './hotel/entities/hotel.entity';
+import { Booking } from './booking/entities/booking.entity';
 
 
 @Module({
@@ -21,10 +25,11 @@ import { JwtModule } from '@nestjs/jwt';
     HotelModule,
     AuthModule,
     BookingModule,
+    UploadImgModule,
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'src/data/akkor.sqlite',
-      entities: [__dirname + '/**/*.entity{.ts,.js}'],
+      entities: [User,Hotel,Booking],
       synchronize: true,
       logging: true,
     }),
