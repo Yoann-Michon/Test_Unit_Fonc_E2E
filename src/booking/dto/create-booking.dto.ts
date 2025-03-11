@@ -11,9 +11,9 @@ export class CreateBookingDto {
 
   @IsDateString()
   @IsNotEmpty()
-  checkInDate: string;
+  checkInDate: Date;
 
   @IsDateString()
   @IsNotEmpty()
-  checkOutDate: string;
+  checkOutDate: Date;
 }

@@ -9,6 +9,7 @@ import {
   UseGuards,
   Request,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { BookingService } from './booking.service';
@@ -306,7 +307,7 @@ export class BookingController {
     const result = await this.bookingService.remove(
       id,
       req.user,
-      req.user.role === 'admin',
+      req.user.role === UserRole.ADMIN,
     );
     return {
       statusCode: HttpStatus.OK,

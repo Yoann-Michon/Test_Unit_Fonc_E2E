@@ -25,6 +25,7 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^11.0.1",
     "cors": "^2.8.5",
+    "i": "^0.3.7",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
@@ -68,7 +69,7 @@
     "source-map-support": "^0.5.21",
     "sqlite3": "^5.1.7",
     "supertest": "^7.0.0",
-    "ts-jest": "^29.2.5",
+    "ts-jest": "^29.2.6",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
@@ -92,12 +93,12 @@
     ],
     "coverageDirectory": "./coverage",
     "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@app/upload-img(|/.*)$": "<rootDir>/libs/upload-img/src/$1"
+    },
     "roots": [
       "<rootDir>/src/",
       "<rootDir>/libs/"
-    ],
-    "moduleNameMapper": {
-      "^@app/upload-img(|/.*)$": "<rootDir>/libs/upload-img/src/$1"
-    }
+    ]
   }
 }

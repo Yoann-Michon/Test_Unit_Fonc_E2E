@@ -11,8 +11,8 @@ import { Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
 import { UserRole } from '../user/entities/user.enum';
 import { InjectRepository } from '@nestjs/typeorm';
-import { HotelService } from 'src/hotel/hotel.service';
-import { UserService } from 'src/user/user.service';
+import { HotelService } from '../hotel/hotel.service';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class BookingService {
