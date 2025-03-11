@@ -81,7 +81,7 @@ describe('AuthController', () => {
 
   describe('register', () => {
     it('should register a user successfully', async () => {
-      const createUserDto = { email: 'test@example.com', password: 'validPassword', firstname: 'John', lastname: 'Doe', role : UserRole.USER };
+      const createUserDto = { email: 'test@example.com', password: 'validPassword', firstname: 'John', lastname: 'Doe', role : UserRole.USER, pseudo:'pseudo' };
       const registerResponse = { message: 'User created successfully' };
 
       mockAuthService.register.mockResolvedValue(registerResponse);

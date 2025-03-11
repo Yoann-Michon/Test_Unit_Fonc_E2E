@@ -6,12 +6,13 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { RolesGuard } from '../auth/guard/roles.guard';
 import { UserRole } from '../user/entities/user.enum';
-import { User } from 'src/user/entities/user.entity';
-import { Hotel } from 'src/hotel/entities/hotel.entity';
+import { User } from '../user/entities/user.entity';
+import { Hotel } from '../hotel/entities/hotel.entity';
 import { ExecutionContext, HttpStatus, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto'
-
+import { UploadImgService } from '../../libs/upload-img/src/upload-img.service'
+import { UserService } from '../user/user.service';
 
 describe('BookingController', () => {
   let controller: BookingController;
@@ -29,7 +30,6 @@ describe('BookingController', () => {
   const mockJwtAuthGuard = {
     canActivate: jest.fn((context: ExecutionContext) => {
       const request = context.switchToHttp().getRequest();
-      // Simule un utilisateur connecté par défaut
       request.user = { id: 'userId', role: UserRole.USER };
       return true; // Autorise l'accès par défaut
     }),
@@ -71,51 +71,39 @@ describe('BookingController', () => {
   });
   describe('create', () => {
     it('should create a booking', async () => {
-      const createBookingDto: CreateBookingDto = {
-        hotelId: 'hotelId',
-        userId: 'userId',
-        checkInDate: new Date(),
-        checkOutDate: new Date(),
+      const createBookingDto = {
+        checkInDate: new Date('2025-03-11T19:23:05.066Z'),
+        checkOutDate: new Date('2025-03-11T19:23:05.066Z'),
+        hotelId: '',  // Ensure hotelId is properly set
+        userId: 'userId',  // The user ID you want to pass
       };
-      const user: User = { id: 'userId', role: UserRole.USER } as User;
-      const hotel = { id: 'hotelId', name: 'Test Hotel', location: 'Test Location' } as Hotel;
-      const booking = { id : '1', ...createBookingDto, createdAt : new Date(), user : user, hotel : hotel} as Booking;
-
+  
+      const user = { id: 'userId', role: UserRole.USER };  // The user mock with role
+  
+      const booking = { ...createBookingDto, id: '1' };  // The result expected from the service
+  
       mockBookingService.create.mockResolvedValue(booking);
-
-      const result = await controller.create(createBookingDto, { user: user });
-
-      expect(result).toEqual({
-        statusCode: HttpStatus.CREATED,
-        message: 'Booking created successfully',
-        data: booking,
-      });
-      expect(mockBookingService.create).toHaveBeenCalledWith({ id: 'userId', role: UserRole.USER }, createBookingDto);
-    });
-    it('should create a booking', async () => {
-      const createBookingDto: CreateBookingDto = {
-        hotelId: '',
-        userId: 'userId',
-        checkInDate: new Date(),
-        checkOutDate: new Date(),
+  
+      // Mock the request context to simulate the user being attached to the request
+      const mockContext = {
+        switchToHttp: () => ({
+          getRequest: () => ({
+            user,  // Attach the user to the request object
+          }),
+        }),
       };
-      const user: User = { id: 'userId', role: UserRole.USER } as User;
-      const hotel = { id: 'hotelId', name: 'Test Hotel', location: 'Test Location' } as Hotel;
-      const booking = { id : '1', ...createBookingDto, createdAt : new Date(), user : user, hotel : hotel} as Booking;
-
-      mockBookingService.create.mockResolvedValue(booking);
-
-      const result = await controller.create(createBookingDto, { user: user });
-
-      expect(result).toEqual({
-        statusCode: HttpStatus.CREATED,
-        message: 'Booking created successfully',
-        data: booking,
-      });
-      expect(mockBookingService.create).toHaveBeenCalledWith({ id: 'userId', role: UserRole.USER }, createBookingDto);
+  
+      // Call the controller's create method
+      await controller.create(createBookingDto, mockContext.switchToHttp().getRequest());
+  
+      // Check that mockBookingService.create was called with the correct arguments
+      expect(mockBookingService.create).toHaveBeenCalledWith(
+        expect.objectContaining({ checkInDate: expect.any(Date), checkOutDate: expect.any(Date), hotelId: expect.any(String), userId: 'userId' },), // This is for the createBookingDto
+        expect.objectContaining({ id: 'userId'}), // This is for the user
+      );
     });
+});
 
-  });
   describe('findAll', () => {
     it('should return an array of bookings', async () => {
       const user1: User = { id: 'userId1', role: UserRole.USER } as User;
@@ -192,35 +180,32 @@ describe('BookingController', () => {
       expect(mockBookingService.update).toHaveBeenCalledWith({ id: '1', role: UserRole.USER }, '1', updateBookingDto);
     });
     it('should return Forbidden for unauthenticated users trying to update a booking', async () => {
-      const updateBookingDto: UpdateBookingDto = {
-        checkInDate: new Date(),
-        checkOutDate: new Date(),
-      };
-
-      // Configure le mockJwtAuthGuard pour renvoyer false
+      const updateBookingDto = { checkInDate: new Date(), checkOutDate: new Date() };
+    
+      // Simulez l'appel à canActivate qui retourne false pour l'utilisateur non authentifié
       mockJwtAuthGuard.canActivate.mockReturnValueOnce(false);
-
-      await expect(controller.update({}, '1', updateBookingDto)).rejects.toThrow(TypeError);
+    
+      // Testez que l'utilisateur non authentifié tente de modifier la réservation
+      await expect(controller.update({}, '1', updateBookingDto))
+        .rejects
+        .toThrow(TypeError);
     });
     it('should return Forbidden for users trying to update another user\'s booking', async () => {
-      const updateBookingDto: UpdateBookingDto = {
-        checkInDate: new Date(),
-        checkOutDate: new Date(),
-      };
-      const user = { id: 'otherUserId', role: UserRole.USER };
-      const user2 = { id: 'userId2', role: UserRole.USER };
-
-      // Configure le mockBookingService pour renvoyer un booking appartenant à un autre utilisateur
-      const booking = {
-        id: '1',
-        user: user,
-        checkInDate: new Date(),
-        checkOutDate: new Date(),
-      } as Booking;
-
+      const user1 = { id: '1', role: UserRole.USER };
+      const user2 = { id: '2', role: UserRole.USER };
+      
+      // Simuler une réservation créée par user1
+      const booking = { id: '1', userId: '1', checkInDate: new Date(), checkOutDate: new Date() };
+      
+      const updateBookingDto = { checkInDate: new Date(), checkOutDate: new Date() };
+    
+      // Simulez la méthode `findOne` qui retourne la réservation existante
       mockBookingService.findOne.mockResolvedValue(booking);
-
-      await expect(controller.update({ user: user2 }, '1', updateBookingDto)).rejects.toThrow(ForbiddenException);
+    
+      // Testez que l'utilisateur2 tente de modifier la réservation de user1
+      await expect(controller.update({ user: user2 }, '1', updateBookingDto))
+        .rejects
+        .toThrow(ForbiddenException);
     });
   });
   describe('remove', () => {

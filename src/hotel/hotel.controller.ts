@@ -18,11 +18,11 @@ import {
 import { HotelService } from './hotel.service';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
-import { Public } from 'src/auth/guard/public.decorator';
-import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
-import { Roles } from 'src/auth/guard/roles.decorator';
-import { RolesGuard } from 'src/auth/guard/roles.guard';
-import { UserRole } from 'src/user/entities/user.enum';
+import { Public } from '../auth/guard/public.decorator';
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { Roles } from '../auth/guard/roles.decorator';
+import { RolesGuard } from '../auth/guard/roles.guard';
+import { UserRole } from '../user/entities/user.enum';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { 
   ApiTags, 

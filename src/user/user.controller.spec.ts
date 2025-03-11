@@ -59,6 +59,7 @@ describe('UserController', () => {
     firstname: 'Valid',
     lastname: 'User',
     role: UserRole.USER,
+    pseudo: 'pseudo'
   };
 
   expect(await controller.create(dto)).toEqual({

@@ -5,11 +5,12 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Hotel } from './entities/hotel.entity';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
-import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
-import { RolesGuard } from 'src/auth/guard/roles.guard';
-import { UserRole } from 'src/user/entities/user.enum';
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { RolesGuard } from '../auth/guard/roles.guard';
+import { UserRole } from '../user/entities/user.enum';
 import { ExecutionContext, HttpStatus, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { UploadImgService } from '../../libs/upload-img/src/upload-img.service'
 
 describe('HotelController', () => {
   let controller: HotelController;
@@ -69,24 +70,29 @@ describe('HotelController', () => {
 
   describe('create', () => {
     it('should create a new hotel (ADMIN)', async () => {
-      const createHotelDto: CreateHotelDto = {
+      const createHotelDto = {
         name: 'Test Hotel',
+        street: 'street test',
         location: 'Test Location',
         description: 'Test Description',
-        picture_list: ['test.jpg']
+        price: 1,
+        picture_list: ['test.jpg'],
       };
-      const createdHotel = { ...createHotelDto, id: '1' };
-
+  
+      const createdHotel = { ...createHotelDto, id: 'uuid-v4-format' };
+  
+      // Simuler la création de l'hôtel
       mockHotelService.create.mockResolvedValue(createdHotel);
-
-      const result = await controller.create(createHotelDto);
-
+  
+      const files: Express.Multer.File[] = []; // Si vous n'envoyez pas de fichiers, c'est un tableau vide
+      const result = await controller.create(createHotelDto, files);
+  
       expect(result).toEqual({
         statusCode: HttpStatus.CREATED,
         message: 'Hotel successfully created',
         data: createdHotel,
       });
-      expect(mockHotelService.create).toHaveBeenCalledWith(createHotelDto);
+      expect(mockHotelService.create).toHaveBeenCalledWith(createHotelDto, files);
     });
     it('should deny access if not an admin', async () => {
       mockRolesGuard.canActivate.mockReturnValue(false); // Simule un échec de garde pour rôle non ADMIN
@@ -95,11 +101,13 @@ describe('HotelController', () => {
         name: 'Test Hotel',
         location: 'Test Location',
         description: 'Test Description',
-        picture_list: ['test.jpg']
+        picture_list: ['test.jpg'],
+        street:'street test',
+        price:1
       };
 
       try {
-        await controller.create(createHotelDto);
+        await controller.create(createHotelDto, []);
       } catch (e) {
         expect(e).toBeInstanceOf(ForbiddenException);
       }
@@ -107,10 +115,10 @@ describe('HotelController', () => {
     it('should deny access if not authenticated', async () => {
       mockJwtAuthGuard.canActivate.mockReturnValue(false); // Simule un échec de garde pour authentification
     
-      const createHotelDto: CreateHotelDto = { name: 'Test Hotel', location: 'Test Location', description: 'Test Description', picture_list: ['test.jpg'] };
+      const createHotelDto: CreateHotelDto = { name: 'Test Hotel', location: 'Test Location', description: 'Test Description', picture_list: ['test.jpg'], street:'street test', price: 1};
     
       try {
-        await controller.create(createHotelDto);
+        await controller.create(createHotelDto, []);
       } catch (e) {
         expect(e).toBeInstanceOf(ForbiddenException);
       }
@@ -172,20 +180,23 @@ describe('HotelController', () => {
         name: 'Updated Hotel',
         location: 'Updated Location',
         description: 'Updated Description',
-        picture_list: ['updated.jpg']
+        picture_list: ['updated.jpg'],
       };
       const updatedHotel = { id, ...updateHotelDto };
-
+  
+      // Simuler les fichiers uploadés comme un tableau vide
+      const files: Express.Multer.File[] = [];
       mockHotelService.update.mockResolvedValue(updatedHotel);
-
-      const result = await controller.update(id, updateHotelDto);
-
+  
+      // Appel de la méthode avec un tableau vide pour les fichiers
+      const result = await controller.update(id, updateHotelDto, files);
+  
       expect(result).toEqual({
         statusCode: HttpStatus.OK,
         message: 'Hotel updated successfully',
         data: updatedHotel,
       });
-      expect(mockHotelService.update).toHaveBeenCalledWith(id, updateHotelDto);
+      expect(mockHotelService.update).toHaveBeenCalledWith(id, updateHotelDto, files);
     });
     it('should deny access if not an admin', async () => {
       mockRolesGuard.canActivate.mockReturnValue(false); // Simule un échec de garde pour rôle non ADMIN
@@ -199,7 +210,7 @@ describe('HotelController', () => {
       };
 
       try {
-        await controller.update(id, updateHotelDto);
+        await controller.update(id, updateHotelDto, []);
       } catch (e) {
         expect(e).toBeInstanceOf(ForbiddenException);
       }

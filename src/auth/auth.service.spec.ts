@@ -4,7 +4,7 @@ import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { CreateUserDto } from '../user/dto/create-user.dto';
-import { UserRole } from 'src/user/entities/user.enum';
+import { UserRole } from '../user/entities/user.enum';
 
 describe('AuthService', () => {
   let authService: AuthService;
@@ -97,7 +97,7 @@ describe('AuthService', () => {
         lastname : 'Doe',
         email: 'test@example.com',
         password: 'validPassword',
-        // pseudo: 'Pseudo',
+        pseudo: 'Pseudo',
         role : UserRole.USER,
       };
 

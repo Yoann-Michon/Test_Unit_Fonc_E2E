@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { BadRequestException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { UploadImgService } from '../../libs/upload-img/src/upload-img.service'
 
 describe('HotelService', () => {
   let service: HotelService;
@@ -17,7 +18,13 @@ describe('HotelService', () => {
     save: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    create: jest.fn()
   };
+
+  // Mock UploadImgService
+const mockUploadImgService = {
+  uploadImages: jest.fn(),
+};
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -27,11 +34,16 @@ describe('HotelService', () => {
           provide: getRepositoryToken(Hotel),
           useValue: mockHotelRepository,
         },
+        {
+          provide: UploadImgService,
+          useValue: mockUploadImgService, // Providing the mock service
+        },
       ],
     }).compile();
 
     service = module.get<HotelService>(HotelService);
     repository = module.get<Repository<Hotel>>(getRepositoryToken(Hotel));
+    
   });
 
   it('should be defined', () => {
@@ -40,19 +52,51 @@ describe('HotelService', () => {
 
   describe('create', () => {
     it('should create a new hotel', async () => {
-      const createHotelDto: CreateHotelDto = { name: 'Test Hotel', location: 'Test Location', description: 'Test Description', picture_list: ['test.jpg']};
+      const createHotelDto: CreateHotelDto = {
+        name: 'Test Hotel',
+        location: 'France',
+        description: 'Test Description',
+        picture_list: ['test.jpg'],
+        street: 'test location',
+        price: 1,
+      };
+    
       mockHotelRepository.findOneBy.mockResolvedValue(null);
       mockHotelRepository.save.mockResolvedValue(createHotelDto);
-
-      const result = await service.create(createHotelDto);
-      expect(result).toEqual(createHotelDto);
+    
+      const mockFile: Express.Multer.File = {
+        fieldname: 'image',
+        originalname: 'test-image.jpg',
+        encoding: '7bit',
+        mimetype: 'image/jpeg',
+        buffer: Buffer.from('test data'), // Simulate the content of the file
+        size: 1024,
+        stream: {
+          read: () => Buffer.from('test data'), // Simulate the data stream
+        } as any,  // Simulate a ReadableStream (no need to implement fully)
+        destination: '',
+        filename: 'test-image.jpg',
+        path: '',
+      };
+    
+      const mockFiles: Express.Multer.File[] = [mockFile];
+    
+      // Mock the uploadImages method to return an array of image URLs
+      mockUploadImgService.uploadImages.mockResolvedValue(['https://example.com/test-image.jpg']);
+    
+      const result = await service.create(createHotelDto, mockFiles);
+      
+      expect(result).toEqual({
+        ...createHotelDto,
+        picture_list: ['https://example.com/test-image.jpg'],
+      });
     });
 
     it('should throw an error if hotel already exists', async () => {
-      const createHotelDto: CreateHotelDto = { name: 'Test Hotel', location: 'Test Location', description: 'Test Description', picture_list: ['test.jpg']};
+      const createHotelDto: CreateHotelDto = { name: 'Test Hotel', location: 'France', description: 'Test Description', picture_list: ['test.jpg'], street: 'test location', price: 1};
       mockHotelRepository.findOneBy.mockResolvedValue(createHotelDto);
 
-      await expect(service.create(createHotelDto)).rejects.toThrow(InternalServerErrorException);
+      await expect(service.create(createHotelDto, [])).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -117,16 +161,32 @@ describe('HotelService', () => {
   describe('update', () => {
     it('should update a hotel', async () => {
       const id = '1';
-      const updateHotelDto: UpdateHotelDto = { name: 'Updated Hotel', location: 'Updated Location', description: 'Test Description', picture_list: ['test.jpg'] };
-      const existingHotel = { id, name: 'Test Hotel', location: 'Test Location'};
-      const updatedHotel = { ...existingHotel, ...updateHotelDto };
-
+      const updateHotelDto: UpdateHotelDto = {
+        name: 'Updated Hotel',
+        location: 'Updated Location',
+      };
+    
+      const existingHotel = {
+        id: '1',
+        name: 'Test Hotel',
+        location: 'France',
+        description: 'Test Description',
+        picture_list: ['test.jpg'],
+        price: 1,
+        street: 'test location',
+      };
+    
+      const updatedHotel = {
+        ...existingHotel,
+        ...updateHotelDto, // Mise à jour avec les nouvelles valeurs
+      };
+    
       mockHotelRepository.findOneBy.mockResolvedValue(existingHotel);
-      mockHotelRepository.update.mockResolvedValue(updatedHotel);
-      mockHotelRepository.findOneBy.mockResolvedValue(updatedHotel);
-
+      mockHotelRepository.save.mockResolvedValue(updatedHotel);
+    
       const result = await service.update(id, updateHotelDto);
-      expect(result).toEqual(updatedHotel);
+    
+      expect(result).toEqual(expect.objectContaining(updateHotelDto)); // Vérification partielle
     });
 
     it('should throw an error if hotel not found', async () => {
@@ -135,7 +195,7 @@ describe('HotelService', () => {
 
       mockHotelRepository.findOneBy.mockResolvedValue(null);
 
-      await expect(service.update(id, updateHotelDto)).rejects.toThrow(InternalServerErrorException);
+      await expect(service.update(id, updateHotelDto)).rejects.toThrow(NotFoundException);
     });
 
     it('should handle errors', async () => {

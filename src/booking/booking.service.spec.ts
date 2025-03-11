@@ -3,13 +3,15 @@ import { BookingService } from './booking.service';
 import { Booking } from './entities/booking.entity';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { HotelService } from 'src/hotel/hotel.service';
+import { HotelService } from '../hotel/hotel.service';
 import { User } from '../user/entities/user.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { NotFoundException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { UserRole } from '../user/entities/user.enum';
-import { Hotel } from 'src/hotel/entities/hotel.entity';
+import { Hotel } from '../hotel/entities/hotel.entity';
+import { UploadImgService } from '../../libs/upload-img/src/upload-img.service'
+import { UserService } from '../user/user.service';
 
 describe('BookingService', () => {
   let service: BookingService;
@@ -20,7 +22,8 @@ describe('BookingService', () => {
   };
 
   const mockUserService = {
-    findOne: jest.fn(),
+    findOne: jest.fn().mockResolvedValue({ id: 'userId', role: UserRole.USER }),
+    findOneById: jest.fn().mockResolvedValue({ id: 'userId', role: UserRole.USER }),  // Add this mock for findOneById
   };
 
   const mockBookingRepository = {
@@ -44,13 +47,17 @@ describe('BookingService', () => {
           provide: HotelService,
           useValue: mockHotelService,
         },
+        {
+          provide: UserService,  // Add the mock for UserService here
+          useValue: mockUserService,
+        },
       ],
     }).compile();
-
+  
     service = module.get<BookingService>(BookingService);
     bookingRepository = module.get<Repository<Booking>>(getRepositoryToken(Booking));
   });
-
+  
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
@@ -78,7 +85,7 @@ describe('BookingService', () => {
       mockBookingRepository.create.mockReturnValue(booking);
       mockBookingRepository.save.mockResolvedValue(booking);
 
-      const result = await service.create(user, createBookingDto);
+      const result = await service.create(createBookingDto, user.id);
 
       expect(result).toEqual(booking);
       expect(mockHotelService.findOne).toHaveBeenCalledWith(createBookingDto.hotelId);
@@ -96,7 +103,7 @@ describe('BookingService', () => {
 
       mockHotelService.findOne.mockResolvedValue(null);
 
-      await expect(service.create(user, createBookingDto)).rejects.toThrow(InternalServerErrorException);
+      await expect(service.create(createBookingDto, user.id)).rejects.toThrow(InternalServerErrorException);
       expect(mockHotelService.findOne).toHaveBeenCalledWith(createBookingDto.hotelId);
     });
   });
@@ -244,7 +251,7 @@ describe('BookingService', () => {
       const createBookingDto: CreateBookingDto = { hotelId: 'hotelId',userId : '1' ,checkInDate: new Date(), checkOutDate: new Date() };
 
       try {
-        await service.create(user, createBookingDto);
+        await service.create(createBookingDto, user.id);
       } catch (e) {
         expect(e).toBeInstanceOf(InternalServerErrorException);
       }

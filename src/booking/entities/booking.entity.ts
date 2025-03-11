@@ -1,5 +1,5 @@
-import { Hotel } from "src/hotel/entities/hotel.entity";
-import { User } from "src/user/entities/user.entity";
+import { Hotel } from "../../hotel/entities/hotel.entity";
+import { User } from "../../user/entities/user.entity";
 import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { ApiProperty } from '@nestjs/swagger';
 

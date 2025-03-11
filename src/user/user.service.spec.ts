@@ -45,7 +45,8 @@ describe('UserService', () => {
         password: 'password123',
         firstname: 'John',
         lastname: 'Doe',
-        role: UserRole.ADMIN
+        role: UserRole.ADMIN,
+        pseudo:'pseudo test'
       };
 
       jest.spyOn(repository, 'findOne').mockResolvedValue(null);
