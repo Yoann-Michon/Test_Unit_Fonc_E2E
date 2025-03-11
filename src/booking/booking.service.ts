@@ -9,10 +9,7 @@ import { UpdateBookingDto } from './dto/update-booking.dto';
 import { Booking } from './entities/booking.entity';
 import { Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
-import { Hotel } from '../hotel/entities/hotel.entity';
-import { Roles } from '../auth/guard/roles.decorator';
 import { UserRole } from '../user/entities/user.enum';
-import { Public } from '../auth/guard/public.decorator';
 import { InjectRepository } from '@nestjs/typeorm';
 import { HotelService } from 'src/hotel/hotel.service';
 import { UserService } from 'src/user/user.service';
@@ -128,33 +125,22 @@ export class BookingService {
   ): Promise<string> {
     try {
       const booking = await this.findOne(id, user, isAdmin);
-
-      if (!booking) {
-        throw new NotFoundException(`booking not found`);
-      }
-
-      if (!isAdmin && booking.user.id !== user.id) {
-        throw new ForbiddenException(
-          'You are not authorized to delete this booking',
-        );
-      }
-
+      
       await this.bookingRepository.delete({ id });
       return `Booking with id ${id} deleted`;
     } catch (error) {
-      throw new Error(`Error deleting booking`);
+      throw new InternalServerErrorException(`Error deleting booking: ${error.message}`);
     }
   }
 
   async getUserBooking(userId: string): Promise<Booking[]> {
     try {
-      const bookings = await this.bookingRepository.find({ where: { user: { id: userId } } });
+      const bookings = await this.bookingRepository.find({ 
+        where: { user: { id: userId } },
+        relations: ['hotel', 'user']
+      });
   
-      if (!bookings || bookings.length === 0) {
-        throw new NotFoundException(`No bookings found for user with ID ${userId}`);
-      }
-  
-      return bookings;
+      return bookings || [];
     } catch (error) {
       throw new InternalServerErrorException(`Failed to fetch bookings: ${error.message}`);
     }
