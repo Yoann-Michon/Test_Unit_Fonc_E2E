@@ -31,7 +31,6 @@ import { Booking } from './booking/entities/booking.entity';
       database: 'src/data/akkor.sqlite',
       entities: [User,Hotel,Booking],
       synchronize: true,
-      logging: true,
     }),
   ],
   controllers: [AppController],

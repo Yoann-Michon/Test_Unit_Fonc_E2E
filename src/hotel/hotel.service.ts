@@ -97,26 +97,32 @@ export class HotelService {
     }
   }
 
-  async update(id: string, updateHotelDto: UpdateHotelDto, files?: Express.Multer.File[]): Promise<Hotel> {
+  async update(
+    id: string,
+    updateHotelDto: UpdateHotelDto,
+    files?: Express.Multer.File[],
+  ): Promise<Hotel> {
     try {
       const hotel = await this.hotelRepository.findOneBy({ id });
-      
+
       if (!hotel) {
         throw new NotFoundException(`Hotel with ID ${id} not found`);
       }
-      
+
       if (files && files.length > 0) {
         const existingImages = hotel.picture_list || [];
         const newImageUrls = await this.imgBBService.uploadImages(files);
         updateHotelDto.picture_list = [...existingImages, ...newImageUrls];
       }
-      
+
       const updatedHotel = { ...hotel, ...updateHotelDto };
-      
+
       return await this.hotelRepository.save(updatedHotel);
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException(`Error updating hotel: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Error updating hotel: ${error.message}`,
+      );
     }
   }
 
